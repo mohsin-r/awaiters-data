@@ -70,7 +70,7 @@ const assessmentSchema = new mongoose.Schema({
     chapterNum: Number,
     chapterName: String,
     marks: {
-        type: markSchema,
+        type: [markSchema],
         required: true
     }
 });
@@ -243,10 +243,91 @@ app.post('/api/new_student_data', (req, res) => {
 });
 
 
+// updating student's class (not promoting)
+app.put('/api/update_student_class/:name/:class', (req, res) => {
+    student.findOneAndUpdate({name: req.params.name, class: req.params.class}, {class: req.body.class}, (err, result) => {
+        if (!err && result != null) {
+            res.json({status: 200, message: "successfully updated", result: result});
+        } else {
+            res.json({status: 500, message: "Unable to update"});
+        }
+    });
+    
+});
+
+
+// updating student's name
+app.put('/api/update_student_name/:name/:class', (req, res) => {
+    student.findOneAndUpdate({name: req.params.name, class: req.params.class}, {name: req.body.name}, (err, result) => {
+        if (!err && result != null) {
+            res.json({status: 200, message: "successfully updated", result: result});
+        } else {
+            res.json({status: 500, message: "Unable to update"});
+        }
+    });
+});
+
+
+// to delete a student (actually changes the status to false rather than deleting it permanently)
+app.put('/api/delete_student/:name/:class', (req, res) => {
+    student.findOneAndUpdate({name: req.params.name, class: req.params.class}, {status: false}, (err, result) => {
+        if (!err && result != null) {
+            res.json({status: 200, message: "successfully deleted", result: result});
+        } else {
+            res.json({status: 500, message: "Unable to delete"});
+        }
+    });
+});
+
+
+// to revive a student (actually changes the status to true rather than adding it again)
+app.put('/api/revive_student/:name/:class', (req, res) => {
+    student.findOneAndUpdate({name: req.params.name, class: req.params.class}, {status: true}, (err, result) => {
+        if (!err && result != null) {
+            res.json({status: 200, message: "successfully revived", result: result});
+        } else {
+            res.json({status: 500, message: "Unable to revive"});
+        }
+    });
+});
+
+
+// get all assessments from records model
+app.get("/api/get_assessments", (req, res) => {
+    record.find({}, 'assessment', function (err, found) {
+        if (err) {
+            res.json({status: 500, message: "Unable to retieve"});
+        } else {
+            res.json({status: 200, message: "retrieve successfully", result: found});
+        }
+    });
+});
+
+
+
+// get all assessments from records model of specific student
+app.get("/api/get_assessments_by_student/:name/:class", (req, res) => {
+    record.find({'name': req.params.class}, {'assessment.marks': 1}, function (err, found) {
+        if (err) {
+            res.json({status: 500, message: "Unable to retieve"});
+        } else {
+            for (i=0; i<found.length; i++) {
+                console.log(found[i].assessment);
+            }
+            res.json({status: 200, message: "retrieve successfully", result: found});
+        }
+    });
+});
+
+// incase of route not present in the file
 app.get('*', function(req, res){
     res.json({status: 400, message: "Bad request"});
 });
 
-app.listen(port, () => {
-    console.log(`Listening on port ${port}`)
+app.listen(port, (err) => {
+    if (err) {
+        console.log(err);
+    } else {
+        console.log(`Listening on port ${port}`)
+    }
 });
