@@ -1,25 +1,43 @@
 <template>
-  <h1>Dashboard</h1>
+  <div id="dashboard">
+    <Sidebar active="dashboard" />
+    <div id="header">
+      <h1> Current Records </h1>
+    </div>
+    <div id="body">
+
+    </div>
+  </div>
 </template>
 
-<script>
-import { useStore } from 'vuex'
-import { useRouter } from 'vue-router'
-import { onBeforeMount } from 'vue'
+<script lang="ts">
+import Sidebar from '../components/Sidebar.vue'
 export default {
+    components: {Sidebar},
     setup() {
-        const store = useStore()
-        const router = useRouter()
-        onBeforeMount(() => {
-          if(!store.state.user) {
-            router.push({name: 'Login'})
-          }
-        })
     }
 
 }
 </script>
 
-<style>
+<style scoped>
+  #dashboard {
+    background-color: white;
+    height: 100vh;
+  }
 
+  #header {
+    margin-left: 250px;
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+
+  #header h1 {
+    margin: 0;
+    font-size: 2rem;
+  }
+
+  #body {
+    margin-left: 250px;
+  }
 </style>

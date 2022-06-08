@@ -4,40 +4,74 @@
       <h1>Awaiters Classes - Data Input System </h1>
       <h2> Please login below to get started with using the system.</h2>
     </div>
-    <div id="body">
+    <div id="body" @keydown.enter.prevent="login()">
       <label class="normalLabel"> Username</label>
       <input type="text" v-model="username" :class="{invalidInput: invalid, normalInput: !invalid}" @input="reset">
       <label class="normalLabel"> Password</label>
       <input type="password" v-model="password" :class="{invalidInput: invalid, normalInput: !invalid}" @input="reset">
       <label :class="{invalidLabel: invalid, normalLabel: !invalid}">{{ message }}</label>
-      <button @click="login(username, password)">Login</button>
+      <button @click="login()">Login</button>
     </div>
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { ref } from 'vue'
+import { onBeforeMount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
+import env from '../apiConfig'
+import header from '../headerConfig'
 export default {
   setup() {
+    const host = env.api_host
     const router = useRouter()
     const store = useStore()
     const username = ref('')
     const password = ref('')
     const invalid = ref(false)
     const message = ref('')
-    const login = (u, p) => {
-      const usernames = ["aw1", "aw2", "aw3", "aw4", "aw5"]
-      if((u + "-password") === p && usernames.includes(u)) {
+    const login = () => {
+      console.log(`${host}/login`)
+      const request = new Request(`${host}/login`, {
+        method: "post",
+        body: JSON.stringify({username: username.value, password: password.value}),
+        headers: {
+          Accept: "application/json, text/plain, */*",
+          "Content-Type": "application/json"
+			  }
+      })
+      fetch(request, {
+        credentials: "include",
+        mode: "cors"
+      })
+      .then(res => {
+        if (res.status === 200) {
+          return res.json()
+        }
+        throw new Error()
+      })
+      .then(json => {
         message.value = "Your username and password is correct! Redirecting you to the dashboard..."
-        store.commit('setUser', u)
+        store.commit('setUser', json.username)
+        store.commit('setTitle', json.title)
         setTimeout(() => router.push({name: "Dashboard"}), 2000)
-      }
-      else {
+      })
+      .catch(error => {
+        console.log(error)
         invalid.value = true
         message.value = "Your username or password is incorrect."
-      }
+      })
+      // const usernames: string[] = ["aw1", "aw2", "aw3", "aw4", "aw5"]
+      // if((u + "-password") === p && usernames.includes(u)) {
+      //   message.value = "Your username and password is correct! Redirecting you to the dashboard..."
+      //   store.commit('setUser', u)
+      //   setTimeout(() => router.push({name: "Dashboard"}), 2000)
+      // }
+      // else {
+      //   invalid.value = true
+      //   message.value = "Your username or password is incorrect."
+      // }
     }
     const reset = () => {
       invalid.value = false;
@@ -50,6 +84,7 @@ export default {
 
 <style scoped>
   #login {
+    background-color: #231F20;
     height: 100vh;
   }
 
@@ -115,11 +150,11 @@ export default {
   }
 
   .normalInput {
-    border: 2px solid #AD974F
+    border: 2.5px solid #AD974F
   }
 
   .invalidInput {
-    border: 2px solid red;
+    border: 2.5px solid red;
   }
 
   .normalLabel {
