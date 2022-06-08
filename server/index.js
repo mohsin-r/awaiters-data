@@ -135,7 +135,7 @@ const oneDay = 1000 * 60 * 60;
 
 app.use(sessions({
     name: 'SESS_NAME',
-	secret: process.env.SESSION_SECRET || "thisismysecretkeyngrieugbitgk",
+	secret: "thisismysecretkeyngrieugbitgk",
 	store: MongoStore.create({
 		mongoUrl: process.env.MONGODB_URI
 	}),
