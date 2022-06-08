@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"No test specified\"",
     "build": "cd client && npm install && npm run build && cd ../server && npm install && cd ..",
-    "start": "node server/index.js"
+    "start": "MONGODB_URI=mongodb+srv://awaiters:awaiters@awaiters-data.nw99t.mongodb.net/Data?retryWrites=true&w=majority NODE_ENV=prod node server/index.js"
   },
   "repository": {
     "type": "git",
