@@ -146,7 +146,7 @@ app.use(sessions({
     }
 }))
 
-if (process.env.NODE_ENV !== 'prod') {
+if (process.env.NODE_ENV !== 'production') {
     app.use(cors({
         origin: "http://localhost:8080",
         credentials: true
