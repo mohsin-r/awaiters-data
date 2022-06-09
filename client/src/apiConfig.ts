@@ -8,4 +8,4 @@ const dev = {
     api_host: 'http://localhost:5000/api'
 };
 
-export default process.env.NODE_ENV === 'prodduction' ? prod : dev;
+export default process.env.NODE_ENV === 'production' ? prod : dev;
