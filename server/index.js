@@ -57,7 +57,8 @@ const studentSchema = new mongoose.Schema({
     attendance: String,
     late: Number,
     homework: Boolean,
-    verses: Number
+    verses: Number,
+    pages: Number
 });
 
 const markSchema = new mongoose.Schema({
@@ -90,7 +91,7 @@ const madersaSchema = new mongoose.Schema({
         required: true
     },
     assessment: {
-        type: assessmentSchema,
+        type: [assessmentSchema],
         required: false
     }
 });

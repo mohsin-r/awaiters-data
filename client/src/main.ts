@@ -13,7 +13,6 @@ dom.watch();
 
 const host = env.api_host
 router.beforeEach((to, from, next) => {
-    console.log(header)
     fetch(`${host}/check-session`, {
       credentials: "include",
       mode: "cors"
@@ -25,7 +24,6 @@ router.beforeEach((to, from, next) => {
         throw new Error()
     })
     .then(json => {
-        console.log(json)
         if (json) {
           store.commit('setUser', json.username)
           store.commit('setTitle', json.title)
