@@ -40,7 +40,9 @@ export default {
             teachers: ["Ali Bhayani", "MAK", "Ali Hemraj"]
         }*/
         onMounted(() => {
-            sidebar.value.querySelector(`#${props.active}`).className = "active"
+            if (props.active) {
+                sidebar.value.querySelector(`#${props.active}`).className = "active"
+            }
         })
         const logout = () => {
             fetch(`${host}/logout`, {

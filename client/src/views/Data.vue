@@ -1,11 +1,11 @@
 <template>
     <div id="data">
         <Sidebar active="data" />
-        <div id="header">
+        <div id="header"  v-if="studentsLoaded && subjectsLoaded">
             <h1>Data Entry Form</h1>
             <h2> Enter the data below. Please follow the correct formats.</h2>
         </div>
-        <div id="body">
+        <div id="body"  v-if="studentsLoaded && subjectsLoaded">
           <form @submit.prevent>
             <div id="metadata">
               <div id="date" class="field">
@@ -14,15 +14,15 @@
               </div>
               <div id="startTime" class="field">
                 <label> Start Time </label>
-                <input type="text" v-model="data.class.startTime" placeholder="HH:MM am/pm">
+                <input type="text" v-model="data.class.startTime" placeholder="HH:MMam/pm">
               </div>
               <div id="endTime" class="field">
                 <label> End Time </label>
-                <input type="text" v-model="data.class.endTime" placeholder="HH:MM am/pm">
+                <input type="text" v-model="data.class.endTime" placeholder="HH:MMam/pm">
               </div>
               <div id="teachers" class="field">
                 <label> Teacher(s) (separate multiple names with commas) </label>
-                <input type="text" v-model="teacherInput">
+                <input type="text" v-model="data.class.teachers">
               </div>
             </div>
             <div id="coverage">
@@ -45,7 +45,7 @@
                 <tbody>
                   <tr v-for="(subject, index) in data.class.coverage" :key="index">
                     <td><input type="text" v-model="subject.name" :placeholder="'Subject ' + (index + 1)"></td>
-                    <td><input type="number" v-model="subject.chapterNum"></td>
+                    <td><input type="text" v-model="subject.chapterNum"></td>
                     <td><input type="text" v-model="subject.chapterName"></td>
                     <td><input type="text" v-model="subject.notes"></td>
                     <td><button @click.prevent="removeSubject(index)"><i class="fas fa-trash-can"></i> Remove</button></td>
@@ -80,7 +80,7 @@
                 <tbody>
                   <tr v-for="(student, index) in data.student" :key="index">
                     <td><input type="text" v-model="student.name" placeholder="Student Name"></td>
-                    <td>
+                    <td style="padding-right: 0.8rem">
                       <select v-model="student.attendance">
                         <option>P</option>
                         <option>A</option>
@@ -88,8 +88,8 @@
                     </td>
                     <td><input type="number" v-model="student.late"></td>
                     <td><input type="checkbox" v-model="student.homework"></td>
-                    <td><input type="number" v-model="student.verses"></td>
-                    <td><input type="number" v-model="student.pages"></td>
+                    <td><input type="number" v-model="student.verses" min="0"></td>
+                    <td><input type="number" v-model="student.pages" min="0"></td>
                     <td><button @click.prevent="removeStudent(index)"><i class="fas fa-trash-can"></i> Remove</button></td>
                   </tr>
                   <tr>
@@ -111,8 +111,8 @@
                     <input type="text" v-model="assessment.subject">
                   </div>
                   <div class="field">
-                    <label>Chapter Number</label>
-                    <input type="number" v-model="assessment.chapterNum">
+                    <label>Chapter Number(s)</label>
+                    <input type="text" v-model="assessment.chapterNum">
                   </div>
                   <div class="field">
                     <label>Chapter Name</label>
@@ -146,7 +146,9 @@
               <button @click="addAssessment" id="addAssessment"><i class="fas fa-circle-plus"></i>Add Assessment</button>
             </div>
             <div id="submit">
-              <button @click="handleSubmit">Submit Form</button>
+              <p>{{ message }}</p>
+              <button @click="handleSubmit">{{ route.params.date === "new" ? "Submit Form" : "Save"}}</button>
+              <button @click="router.push({name: 'Dashboard'})">Return Home</button>
             </div>
           </form>
           <br />
@@ -160,8 +162,8 @@
 import Sidebar from "../components/Sidebar.vue"
 import env from '../apiConfig'
 import { useStore } from "vuex"
-import { ref } from "vue"
-import router, { useRouter } from "vue-router"
+import { ref, onBeforeMount, watch } from "vue"
+import router, { useRouter, useRoute, onBeforeRouteLeave } from "vue-router"
 export default {
   components: {Sidebar},
   props: [],
@@ -169,54 +171,140 @@ export default {
     const loaded = ref(false)
     const store = useStore()
     const router = useRouter()
+    const route = useRoute()
     const host = env.api_host
-    const teacherInput = ref('')
+    const message = ref('')
+    const existingDate = ref('')
+    const studentsLoaded = ref(false)
+    const subjectsLoaded = ref(false)
     let studentList: any = []
     const data: any = ref({
       name: store.state.user,
       date: '',
       class: {
-        teachers: [],
+        teachers: '',
         startTime: '',
         endTime: '',
-        coverage: [{name: '', chapterNum: '', chapterName: '', notes: ''},
-                   {name: '', chapterNum: '', chapterName: '', notes: ''},
-                   {name: '', chapterNum: '', chapterName: '', notes: ''},
-                   {name: '', chapterNum: '', chapterName: '', notes: ''},
-                   {name: '', chapterNum: '', chapterName: '', notes: ''}]
+        coverage: []
       },
       student: [],
       assessment: []
     })
 
-    // get student list from the server
-    fetch(`${host}/get_student_by_class/${store.state.user}`, {
-      credentials: "include",
-      mode: "cors"
-    })
-    .then(res => {
+    const newSetup = () => {
+      // get student list from the server
+      fetch(`${host}/get_student_by_class/${store.state.user}`, {
+        credentials: "include",
+        mode: "cors"
+      })
+      .then(res => {
+          if (res.status === 200) {
+            return res.json()
+          }
+          throw new Error()
+      })
+      .then(json => {
+          if (json) {
+            studentList = json.result
+            studentList.forEach((student: any) => {
+              data.value.student.push({
+                name: student.name,
+                attendance: 'P',
+                late: '',
+                homework: false,
+                verses: '',
+                pages: ''
+              })
+            });
+          }
+          studentsLoaded.value = true
+      })
+      .catch(error => {
+          studentsLoaded.value = true
+          console.log(error)
+      })
+
+      // fetch defaults from the server
+      fetch(`${host}/get_default/${store.state.user}`, {
+        credentials: "include",
+        mode: "cors"
+      })
+      .then(res => {
         if (res.status === 200) {
           return res.json()
         }
         throw new Error()
-    })
-    .then(json => {
+      })
+      .then(json => {
         if (json) {
-          studentList = json.result
-          studentList.forEach((student: any) => {
-            data.value.student.push({
-              name: student.name,
-              attendance: 'P',
-              late: 0,
-              homework: false,
-              verses: 0,
-              pages: 0
-            })
+          data.value.class.startTime = json.startTime
+          data.value.class.endTime = json.endTime
+          data.value.class.teachers = json.teachers
+          json.subjects.forEach((subject: String) => {
+            data.value.class.coverage.push({name: subject, chapterNum: '', chapterName: '', notes: ''})
           });
         }
-    })
-    .catch(error => {
+        subjectsLoaded.value = true
+      })
+      .catch(error => {
+        subjectsLoaded.value = true
         console.log(error)
+      })
+    }
+
+    const existingSetup = () => {
+      // fetch defaults from the server
+      fetch(`${host}/get_record_by_both/${route.params.date}/${store.state.user}`, {
+        credentials: "include",
+        mode: "cors"
+      })
+      .then(res => {
+        if (res.status === 200) {
+          return res.json()
+        }
+        throw new Error()
+      })
+      .then(json => {
+        if (json) {
+          data.value = json[0]
+          existingDate.value = data.value.date
+          data.value.date = data.value.date.split('T')[0]
+          subjectsLoaded.value = true
+          studentsLoaded.value = true
+        }
+        else {
+          throw new Error()
+        }
+      })
+      .catch(error => {
+        console.log(error)
+        router.push({name: 'NotFound'})
+      })
+    }
+
+    let unwatch: any;
+
+    onBeforeMount(() => {
+      if (route.params.date === 'new') {
+        newSetup()
+      }
+      else {
+        existingSetup()
+      }
+      unwatch = watch(() => route.params.date, (date, prevDate) => {
+        studentsLoaded.value = false
+        subjectsLoaded.value = false
+        if (date === 'new') {
+          newSetup()
+        }
+        else {
+          existingSetup()
+        }
+      })
+    })
+
+    onBeforeRouteLeave(() => {
+      unwatch()
     })
 
     const removeSubject = (index: number) => {
@@ -232,7 +320,7 @@ export default {
     }
 
     const addStudent = () => {
-      data.value.student.push({name: '', attendance: 'P', late: 0, homework: false, verses: 0, pages: 0})
+      data.value.student.push({name: '', attendance: 'P', late: '', homework: false, verses: '', pages: ''})
     }
 
     const removeAssessment = (index: number) => {
@@ -256,11 +344,58 @@ export default {
     }
 
     const handleSubmit = () => {
-      alert("Your data was uploaded successfully!")
-      router.push({name: "Dashboard"})
+      const date: any = new Date(data.value.date)
+      if (date === "Invalid Date" || isNaN(date)) {
+        message.value = "You have not entered a valid date. A valid date is needed to save the data."
+      }
+      else {
+        console.log(`${host}/new_record_data`)
+        const request = new Request(`${host}/new_record_data`, {
+          method: "post",
+          body: JSON.stringify({name: store.state.user, date: existingDate.value === '' ? data.value.date : existingDate.value, data: data.value}),
+          headers: {
+            Accept: "application/json, text/plain, */*",
+            "Content-Type": "application/json"
+          }
+        })
+        fetch(request, {
+          credentials: "include",
+          mode: "cors"
+        })
+        .then(res => {
+          if (res.status === 200) {
+            return res.json()
+          }
+          throw new Error()
+        })
+        .then(json => {
+          console.log(json)
+          message.value = "Your data was uploaded successfully! Redirecting you back to the dashboard..."
+          setTimeout(() => router.push({name: "Dashboard"}), 2000)
+        })
+        .catch(error => {
+          console.log(error)
+          message.value = "An error occurred. Please check that your data is in the correct format and try again."
+        })
+      }
     }
 
-    return { data, teacherInput, removeSubject, addSubject, removeStudent, addStudent, removeAssessment, addAssessment, removeStudentFromAssessment, addStudentToAssessment, handleSubmit }
+    return { data,
+             route,
+             router,
+             removeSubject,
+             addSubject,
+             removeStudent,
+             addStudent,
+             removeAssessment,
+             addAssessment,
+             removeStudentFromAssessment,
+             addStudentToAssessment,
+             handleSubmit,
+             message,
+             studentsLoaded,
+             subjectsLoaded
+           }
   }
 }
 </script>
@@ -269,6 +404,7 @@ export default {
   #data {
     background-color: white;
     height: 100vh;
+    overflow-x: hidden;
   }
 
   #header {
@@ -315,7 +451,7 @@ export default {
   }
 
   form #teachers {
-    max-width: 500px;
+    max-width: 400px;
   }
 
   form input {
@@ -370,6 +506,7 @@ export default {
     font-size: 1rem;
     padding: 0.5rem;
     border-radius: 0.25rem;
+    resize: none;
   }
 
   input[type="checkbox"] {
@@ -430,8 +567,15 @@ export default {
 
   #submit button {
     max-width: min(30%, 300px);
+    margin-bottom: 0.8rem;
     border-radius: 500px;
     font-size: 1.2rem;
     font-weight: 500;
+  }
+
+  #submit p {
+    margin-bottom: 0.8rem;
+    font-weight: 500;
+    font-size: 1.2rem;
   }
 </style>

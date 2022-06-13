@@ -37,28 +37,37 @@ const userSchema = new mongoose.Schema({
 
 const coverageSchema = new mongoose.Schema({
     name: String,
-    chapterNum: Number,
+    chapterNum: String,
     chapterName: String,
     notes: String
 });
 
 const classSchema = new mongoose.Schema({
-    teachers: [String],
+    teachers: String,
     startTime: String,
     endTime: String,
     coverage: {
         type: [coverageSchema],
-        required: true
+        required: false
     }
 });
 
 const studentSchema = new mongoose.Schema({
     name: String,
     attendance: String,
-    late: Number,
+    late: {
+        type: Number,
+        default: 0
+    },
     homework: Boolean,
-    verses: Number,
-    pages: Number
+    verses: {
+        type: Number,
+        default: 0
+    },
+    pages: {
+        type: Number,
+        default: 0
+    }
 });
 
 const markSchema = new mongoose.Schema({
@@ -68,11 +77,11 @@ const markSchema = new mongoose.Schema({
 
 const assessmentSchema = new mongoose.Schema({
     subject: String,
-    chapterNum: Number,
+    chapterNum: String,
     chapterName: String,
     marks: {
         type: [markSchema],
-        required: true
+        required: false
     }
 });
 
@@ -80,21 +89,29 @@ const madersaSchema = new mongoose.Schema({
     name: String,
     date: {
         type: Date,
-        default: Date.now
+        required: true
     },
     class: {
         type: classSchema,
-        required: true
+        required: false
     },
     student: {
         type: [studentSchema],
-        required: true
+        required: false
     },
     assessment: {
         type: [assessmentSchema],
         required: false
     }
 });
+
+const defaultSchema = new mongoose.Schema({
+    name: String,
+    startTime: String,
+    endTime: String,
+    teachers: String,
+    subjects: [String]
+})
 
 const studentTableSchema = new mongoose.Schema({
     name: String,
@@ -107,6 +124,8 @@ const record = mongoose.model("Record", madersaSchema);
 const student = mongoose.model("Student", studentTableSchema);
 
 const user = mongoose.model("User", userSchema)
+
+const def = mongoose.model("Default", defaultSchema)
 
 const authenticate = async (req, res, next) => {
 	// if (env !== 'production' && USE_TEST_USER)
@@ -255,7 +274,7 @@ app.get("/api/get_record_by_date/:date", authenticate, (req, res) => {
 
 // to get record of the specific class held till now
 app.get("/api/get_record_by_name/:name", authenticate,  (req, res) => {
-    record.find({name: req.params.name}, function (err, found) {
+    record.find({name: req.params.name}, null, {sort: {date: -1}},function (err, found) {
         if (err) {
             res.json({status: 500, message: "Unable to retrieve"});
             throw err;
@@ -267,29 +286,39 @@ app.get("/api/get_record_by_name/:name", authenticate,  (req, res) => {
 
 
 // to get record of the specific class held on the specific date
-app.get("/api/get_record_by_both/:date/:name", authenticate,  (req, res) => {
-    record.find({date: req.params.date, name: req.params.name}, function (err, found) {
-        if (err) {
-            res.json({status: 500, message: "Unable to retrieve"});
-            throw err;
-        } else {
-            res.json({status: 200, message: "Retreive successfully", result: found});
+app.get("/api/get_record_by_both/:date/:name", authenticate,  async (req, res) => {
+    try {
+        const results = await record.find({date: req.params.date, name: req.params.name})
+        if (!results) {
+            res.status(400).send()
         }
-    });
+        else {
+            res.send(results)
+        }
+    }
+    catch (error) {
+        res.status(400).send()
+    }
 });
 
 
 // add new records i.e. everyday data into the record model
-app.post("/api/new_record_data", authenticate,  function(req, res) {
-    const s = new record(req.body);
-    s.save((err, result) => {
-        if (err) {
-            res.json({status: 500, message: "Unable to upload"});
-            throw err;
-        } else {
-            res.json({status: 200, message: "Upload successfully"});
+app.post("/api/new_record_data", authenticate, async (req, res) => {
+    try {
+        req.body._id = undefined
+        const data = await record.replaceOne({ name: req.body.name, date: req.body.date }, req.body.data, {upsert: true})
+        console.log(data)
+        if (data) {
+            res.send(data)
         }
-    });
+        else {
+            res.status(400).send("Bad Request")
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(400).send("Bad Request")
+    }
 });
 
 
@@ -364,6 +393,44 @@ app.post('/api/new_user', authenticate, async (req, res) => {
             res.status(400).send("Bad Request")
         }
 
+    }
+})
+
+// add new defaults into DB
+app.post('/api/new_default', authenticate, async (req, res) => {
+    try {
+        const d = new def(req.body)
+        d.save()
+        res.status(200).send("Successfully added.")
+    }
+    catch (error) {
+        console.log(error)
+        if (isMongoError(error)) {
+            res.status(500).send("Internal server error")
+        } else {
+            res.status(400).send("Bad Request")
+        }
+    }
+})
+
+// get default for a class
+app.get('/api/get_default/:name', authenticate, async (req, res) => {
+    try {
+        const d = await def.findOne({name: req.params.name})
+        if (!d) {
+            res.status(400).send()
+        }
+        else {
+            res.send(d)
+        }
+    }
+    catch (error) {
+        console.log(error)
+        if (isMongoError(error)) {
+            res.status(500).send("Internal server error")
+        } else {
+            res.status(400).send("Bad Request")
+        }
     }
 })
 
