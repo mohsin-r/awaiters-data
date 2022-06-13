@@ -48,7 +48,7 @@
                     <td><input type="text" v-model="subject.chapterNum"></td>
                     <td><input type="text" v-model="subject.chapterName"></td>
                     <td><input type="text" v-model="subject.notes"></td>
-                    <td><button @click.prevent="removeSubject(index)"><i class="fas fa-trash-can"></i> Remove</button></td>
+                    <td><button @click.prevent="removeSubject(index)"><i class="fas fa-trash-can"></i>Remove</button></td>
                   </tr>
                   <tr>
                     <td><button @click.prevent="addSubject"><i class="fas fa-circle-plus"></i>Add Subject</button></td>
@@ -90,7 +90,7 @@
                     <td><input type="checkbox" v-model="student.homework"></td>
                     <td><input type="number" v-model="student.verses" min="0"></td>
                     <td><input type="number" v-model="student.pages" min="0"></td>
-                    <td><button @click.prevent="removeStudent(index)"><i class="fas fa-trash-can"></i> Remove</button></td>
+                    <td><button @click.prevent="removeStudent(index)"><i class="fas fa-trash-can"></i>Remove</button></td>
                   </tr>
                   <tr>
                     <td><button @click.prevent="addStudent"><i class="fas fa-circle-plus"></i>Add Student</button></td>
@@ -134,7 +134,7 @@
                     <tr v-for="(student, i) in data.assessment[index].marks" :key="i">
                       <td><input type="text" v-model="student.name" placeholder="Student Name"></td>
                       <td><input type="number" min="0" max="100" v-model="student.mark"></td>
-                      <td><button @click.prevent="removeStudentFromAssessment(index, i)"><i class="fas fa-trash-can"></i> Remove</button></td>
+                      <td><button @click.prevent="removeStudentFromAssessment(index, i)"><i class="fas fa-trash-can"></i>Remove</button></td>
                     </tr>
                     <tr>
                       <td><button @click.prevent="addStudentToAssessment(index, i)"><i class="fas fa-circle-plus"></i>Add Student</button></td>

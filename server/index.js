@@ -321,6 +321,27 @@ app.post("/api/new_record_data", authenticate, async (req, res) => {
     }
 });
 
+// A delete route to delete a record
+app.delete('/api/delete_record', authenticate, async (req, res) => {
+	if (mongoose.connection.readyState != 1) {
+		log('Issue with mongoose connection')
+		res.status(500).send('Internal server error')
+		return;
+	}
+	try {
+		const rec = await record.findOneAndRemove({ 'name': req.body.name, 'date': req.body.date })
+		if (!rec) {
+			res.status(404).send('Resource not found')
+		}
+		else {
+			res.send(rec)
+		}
+	} catch (error) {
+		log(error)
+		res.status(500).send("Internal Server Error")
+	}
+})
+
 
 // get all students from student model
 app.get("/api/get_student", authenticate, (req, res) => {
