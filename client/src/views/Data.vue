@@ -451,7 +451,7 @@ export default {
   }
 
   form #teachers {
-    max-width: 400px;
+    max-width: 500px;
   }
 
   form input {
