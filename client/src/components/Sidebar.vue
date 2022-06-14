@@ -2,7 +2,7 @@
     <div id="sidebar" ref="sidebar" v-show="store.state.title">
         <h1>{{ store.state.title }}</h1>
         <router-link to="/dashboard" id="dashboard"><i class="fas fa-grip"></i> <span> Dashboard </span></router-link>
-        <router-link to="/data/new" id="data"><i class="fas fa-circle-plus"></i> <span> Add Data </span></router-link>
+        <router-link to="/data/new" id="data"><i class="fas fa-file-circle-plus"></i> <span> Data Entry Form </span></router-link>
         <router-link to="/analysis" id="analysis"><i class="fas fa-chart-simple"></i> <span> Analysis </span></router-link>
         <a href="#" @click="logout" id="logout"><i class="fas fa-arrow-right-from-bracket"></i> <span> Logout </span></a>
         <!-- div id="classInfo">
